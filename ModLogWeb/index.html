@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModLog - Server Logs</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0f0f1a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* LOGIN */
+        #login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .login-box {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 12px;
+            padding: 40px;
+            width: 360px;
+            text-align: center;
+        }
+
+        .login-box h1 {
+            font-size: 1.8rem;
+            color: #7c6af7;
+            margin-bottom: 8px;
+        }
+
+        .login-box p {
+            color: #888;
+            margin-bottom: 28px;
+            font-size: 0.9rem;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0f0f1a;
+            border: 1px solid #2a2a4a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            outline: none;
+        }
+
+        .login-box input:focus { border-color: #7c6af7; }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #7c6af7;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover { background: #6a56e0; }
+
+        .error-msg {
+            color: #ff6b6b;
+            margin-top: 12px;
+            font-size: 0.85rem;
+        }
+
+        /* DASHBOARD */
+        #dashboard { display: none; }
+
+        header {
+            background: #1a1a2e;
+            border-bottom: 1px solid #2a2a4a;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header h1 { color: #7c6af7; font-size: 1.4rem; }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid #2a2a4a;
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .logout-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px; }
+
+        /* STATS */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-card .num { font-size: 2rem; font-weight: bold; }
+        .stat-card .label { color: #888; font-size: 0.85rem; margin-top: 4px; }
+        .stat-ban  .num { color: #ff6b6b; }
+        .stat-kick .num { color: #ffd93d; }
+        .stat-mute .num { color: #6bcfff; }
+
+        /* FILTER */
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid #2a2a4a;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active, .filter-btn:hover { background: #7c6af7; border-color: #7c6af7; color: white; }
+        .filter-btn.ban.active  { background: #ff6b6b; border-color: #ff6b6b; }
+        .filter-btn.kick.active { background: #ffd93d; border-color: #ffd93d; color: #000; }
+        .filter-btn.mute.active { background: #6bcfff; border-color: #6bcfff; color: #000; }
+
+        /* SEARCH */
+        .search-bar {
+            width: 100%;
+            padding: 10px 16px;
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            outline: none;
+        }
+
+        .search-bar:focus { border-color: #7c6af7; }
+
+        /* LOG TABLE */
+        .log-table {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .log-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .log-table th {
+            background: #12122a;
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .log-table td {
+            padding: 14px 16px;
+            border-top: 1px solid #1f1f3a;
+            font-size: 0.9rem;
+        }
+
+        .log-table tr:hover td { background: #1f1f3a; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .badge-BAN  { background: #ff6b6b22; color: #ff6b6b; border: 1px solid #ff6b6b44; }
+        .badge-KICK { background: #ffd93d22; color: #ffd93d; border: 1px solid #ffd93d44; }
+        .badge-MUTE { background: #6bcfff22; color: #6bcfff; border: 1px solid #6bcfff44; }
+
+        .empty {
+            text-align: center;
+            color: #888;
+            padding: 60px;
+            font-size: 0.95rem;
+        }
+
+        .refresh-btn {
+            padding: 8px 18px;
+            background: transparent;
+            border: 1px solid #2a2a4a;
+            color: #888;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+
+        .refresh-btn:hover { border-color: #7c6af7; color: #7c6af7; }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+    <div class="login-box">
+        <h1>🛡 ModLog</h1>
+        <p>Minecraft Server Moderation Log</p>
+        <input type="password" id="password-input" placeholder="Passwort eingeben..." />
+        <button class="btn" onclick="login()">Einloggen</button>
+        <div class="error-msg" id="error-msg"></div>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+    <header>
+        <h1>🛡 ModLog Dashboard</h1>
+        <button class="logout-btn" onclick="logout()">Ausloggen</button>
+    </header>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card stat-ban">
+                <div class="num" id="count-ban">0</div>
+                <div class="label">Bans</div>
+            </div>
+            <div class="stat-card stat-kick">
+                <div class="num" id="count-kick">0</div>
+                <div class="label">Kicks</div>
+            </div>
+            <div class="stat-card stat-mute">
+                <div class="num" id="count-mute">0</div>
+                <div class="label">Mutes</div>
+            </div>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" onclick="setFilter('ALL', this)">Alle</button>
+            <button class="filter-btn ban"  onclick="setFilter('BAN', this)">Bans</button>
+            <button class="filter-btn kick" onclick="setFilter('KICK', this)">Kicks</button>
+            <button class="filter-btn mute" onclick="setFilter('MUTE', this)">Mutes</button>
+        </div>
+
+        <input type="text" class="search-bar" placeholder="Spieler suchen..." oninput="renderTable()" id="search" />
+
+        <button class="refresh-btn" onclick="loadLogs()">↻ Aktualisieren</button>
+
+        <div class="log-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Typ</th>
+                        <th>Spieler</th>
+                        <th>Moderator</th>
+                        <th>Grund</th>
+                        <th>Datum</th>
+                    </tr>
+                </thead>
+                <tbody id="log-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allLogs = [];
+    let currentFilter = 'ALL';
+    let token = '';
+
+    // API URL - wird nach dem Deploy gesetzt
+    const API_URL = window.location.origin + '/api/log';
+
+    function login() {
+        const pw = document.getElementById('password-input').value;
+        if (!pw) return;
+        token = pw;
+        loadLogs();
+    }
+
+    document.getElementById('password-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') login();
+    });
+
+    async function loadLogs() {
+        try {
+            const res = await fetch(API_URL, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (res.status === 401) {
+                document.getElementById('error-msg').textContent = 'Falsches Passwort!';
+                return;
+            }
+
+            const data = await res.json();
+            allLogs = data.logs || [];
+
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+
+            updateStats();
+            renderTable();
+        } catch (e) {
+            document.getElementById('error-msg').textContent = 'Verbindungsfehler!';
+        }
+    }
+
+    function updateStats() {
+        document.getElementById('count-ban').textContent  = allLogs.filter(l => l.type === 'BAN').length;
+        document.getElementById('count-kick').textContent = allLogs.filter(l => l.type === 'KICK').length;
+        document.getElementById('count-mute').textContent = allLogs.filter(l => l.type === 'MUTE').length;
+    }
+
+    function setFilter(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTable();
+    }
+
+    function renderTable() {
+        const search = document.getElementById('search').value.toLowerCase();
+        const filtered = allLogs.filter(l => {
+            const matchFilter = currentFilter === 'ALL' || l.type === currentFilter;
+            const matchSearch = !search ||
+                l.target.toLowerCase().includes(search) ||
+                l.moderator.toLowerCase().includes(search) ||
+                l.reason.toLowerCase().includes(search);
+            return matchFilter && matchSearch;
+        });
+
+        const tbody = document.getElementById('log-body');
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty">Keine Einträge gefunden.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(l => `
+            <tr>
+                <td><span class="badge badge-${l.type}">${l.type}</span></td>
+                <td>${esc(l.target)}</td>
+                <td>${esc(l.moderator)}</td>
+                <td>${esc(l.reason)}</td>
+                <td>${esc(l.timestamp)}</td>
+            </tr>
+        `).join('');
+    }
+
+    function esc(s) {
+        return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function logout() {
+        token = '';
+        allLogs = [];
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('password-input').value = '';
+        document.getElementById('error-msg').textContent = '';
+    }
+
+    // Auto-refresh alle 30 Sekunden
+    setInterval(() => { if (token) loadLogs(); }, 30000);
+</script>
+</body>
+</html>
